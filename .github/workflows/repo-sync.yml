@@ -6,6 +6,12 @@ on:
     branches:
       - main
 
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
   workflow_dispatch:
 
 permissions:
@@ -18,6 +24,7 @@ concurrency:
 jobs:
   sync:
     name: Sync Main Branch
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
@@ -35,10 +42,19 @@ jobs:
           git remote add destination \
             https://x-access-token:${REPO_SYNC_TOKEN}@github.com/MANCHACHINNABAYANNA/Repo_sync.git
 
-      - name: Sync Main Branch
+      - name: Fetch Destination Main
         run: |
-          git push destination HEAD:refs/heads/main
+          git fetch destination \
+            refs/heads/main:refs/remotes/destination/main
+
+      - name: Sync Source Main to Destination Main
+        run: |
+          EXPECTED_SHA=$(git rev-parse refs/remotes/destination/main)
+
+          git push \
+            --force-with-lease=refs/heads/main:$EXPECTED_SHA \
+            destination HEAD:refs/heads/main
 
       - name: Sync Completed
         run: |
-          echo "Successfully synced source main to destination main"
+          echo "Source main successfully synchronized to destination main."
