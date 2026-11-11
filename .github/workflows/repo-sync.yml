@@ -1,0 +1,46 @@
+
+name: Sync Source to Destination
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repo-sync-main
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync Main Branch
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout source repository
+      - name: Checkout Source Repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # Step 2: Configure destination authentication
+      - name: Configure Destination Remote
+        env:
+          REPO_SYNC_TOKEN: ${{ secrets.REPO_SYNC_TOKEN }}
+        run: |
+          git remote add destination \
+            https://x-access-token:${REPO_SYNC_TOKEN}@github.com/MANCHACHINNABAYANNA/Repo_sync.git
+
+      # Step 3: Push source main to destination main
+      - name: Sync Main Branch
+        run: |
+          git push destination HEAD:refs/heads/main
+
+      # Step 4: Display success
+      - name: Sync Completed
+        run: echo "Successfully synced source main to destination main"
